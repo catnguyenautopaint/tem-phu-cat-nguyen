@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hệ thống Tạo & In Tem Phụ Hóa Chất Tự Động - Cát Nguyên Autocolor</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS (xlsx.full.min.js) for Multi-Sheet Excel & Google Sheet Parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              gold: '#c59b27',
+              darkgold: '#8b6508',
+              lightgold: '#fbf7ee',
+              bordergold: '#e6d5b8',
+              dark: '#181614',
+              charcoal: '#24211d',
+              accent: '#d4af37'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .gold-gradient-bg {
+      background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+    }
+
+    .decal-100x70 {
+      width: 100mm;
+      min-height: 70mm;
+      padding: 3mm 4mm;
+      font-size: 7.2pt;
+      line-height: 1.25;
+      background: #ffffff;
+      color: #000000;
+      position: relative;
+    }
+    
+    .a4-page-preview {
+      width: 210mm;
+      min-height: 297mm;
+      background: #ffffff;
+      padding: 8mm;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      margin: 0 auto;
+    }
+
+    .grid-a4-4up {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 5mm;
+      width: 100%;
+      height: 100%;
+    }
+
+    .grid-a4-6up {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr;
+      gap: 4mm;
+      width: 100%;
+      height: 100%;
+    }
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        font-family: Arial, sans-serif !important;
+        color: #000000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      #print-wrapper {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+      }
+      .print-page-a4 {
+        width: 210mm !important;
+        height: 297mm !important;
+        padding: 6mm !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        page-break-after: always;
+        background: #ffffff !important;
+      }
+      .print-decal-single {
+        width: 100mm !important;
+        min-height: 70mm !important;
+        margin: 0 !important;
+        padding: 3mm 4mm !important;
+        page-break-after: always;
+      }
+      .print-decal-card {
+        border: 2px solid #000000 !important;
+        box-shadow: none !important;
+        page-break-inside: avoid !important;
+        background: #ffffff !important;
+        position: relative !important;
+        overflow: hidden !important;
+        image-rendering: -webkit-optimize-contrast !important;
+        image-rendering: crisp-edges !important;
+      }
+      @page {
+        margin: 0;
+        size: auto;
+      }
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #181614;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #8b6508;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans min-h-screen flex flex-col antialiased selection:bg-brand-gold selection:text-black">
+
+  <!-- NOTIFICATION TOAST -->
+  <div id="toast-notify" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-brand-gold text-black font-semibold px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 border border-yellow-300 pointer-events-none">
+    <i class="fa-solid fa-circle-check text-lg"></i>
+    <span id="toast-message">Đã nạp dữ liệu thành công!</span>
+  </div>
+
+  <!-- APP HEADER (NO PRINT) -->
+  <header class="no-print bg-gradient-to-r from-brand-dark via-brand-charcoal to-brand-dark border-b-2 border-brand-gold text-white sticky top-0 z-40 shadow-xl">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="h-11 w-auto bg-brand-dark/40 p-1 rounded border border-brand-gold/40 flex items-center justify-center">
+          <svg class="h-9 w-auto" viewBox="0 0 300 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M150 10 L275 50 V130 C275 190 150 230 150 230 C150 230 25 190 25 130 V50 L150 10 Z" stroke="url(#goldGrad)" stroke-width="10" fill="none"/>
+            <path d="M80 110 C80 90 120 75 150 75 C180 75 220 90 220 110 C220 125 195 135 150 135 C105 135 80 125 80 110 Z" stroke="url(#goldGrad)" stroke-width="6" fill="none"/>
+            <rect x="65" y="115" width="170" height="30" rx="6" fill="url(#goldGrad)"/>
+            <text x="150" y="136" font-family="'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="20" fill="#181614" text-anchor="middle" letter-spacing="1">CAT NGUYEN</text>
+            <text x="150" y="165" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="12" fill="url(#goldGrad)" text-anchor="middle" letter-spacing="2">AUTOCOLOR</text>
+            <text x="150" y="185" font-size="10" fill="url(#goldGrad)" text-anchor="middle">★ ★ ★ ★ ★</text>
+            <defs>
+              <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#bf953f" />
+                <stop offset="25%" stop-color="#fcf6ba" />
+                <stop offset="50%" stop-color="#b38728" />
+                <stop offset="75%" stop-color="#fbf5b7" />
+                <stop offset="100%" stop-color="#aa771c" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-brand-gold tracking-wide uppercase flex items-center gap-2">
+            CÁT NGUYÊN AUTOCOLOR
+            <span class="text-xs bg-brand-darkgold text-white px-2 py-0.5 rounded font-medium border border-brand-gold">In Tem Phụ Hóa Chất</span>
+          </h1>
+          <p class="text-xs text-gray-400">Hệ Thống Tạo & In Tem Phụ Hóa Chất Tự Động (Logo Góc & Dàn Khổ A4)</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="window.print()" class="gold-gradient-bg text-black font-extrabold px-4 py-2 rounded-lg shadow-lg hover:brightness-110 active:scale-95 transition flex items-center gap-2 text-sm">
+          <i class="fa-solid fa-print"></i>
+          <span>IN TEM NGAY (Ctrl+P)</span>
+        </button>
+        <button onclick="resetForm()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold px-3 py-2 rounded-lg border border-gray-700 text-sm transition flex items-center gap-1.5">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>Làm Mới</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN TWO-COLUMN CONTENT AREA (NO PRINT) -->
+  <main class="no-print flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- LEFT COLUMN: CONTROLS & FORM (5 cols) -->
+    <section class="lg:col-span-5 space-y-4">
+
+      <!-- LOGO MANAGEMENT CONTROL -->
+      <div class="bg-brand-charcoal border border-brand-gold/40 rounded-xl p-3 shadow-lg flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-shield-halved text-brand-gold text-lg"></i>
+            <div>
+              <div class="text-xs font-bold text-brand-gold uppercase tracking-wider">Logo & Bản In Sắc Nét</div>
+              <div class="text-[10px] text-gray-400">Hiển thị sắc nét trên máy in Decal/A4</div>
+            </div>
+          </div>
+
+          <label class="bg-gray-800 hover:bg-gray-700 text-brand-gold text-xs font-bold px-3 py-1.5 rounded-lg border border-brand-gold/40 cursor-pointer transition flex items-center gap-1.5">
+            <i class="fa-solid fa-upload"></i>
+            <span>Tải Logo Khác</span>
+            <input type="file" id="inp-custom-logo" accept="image/*" onchange="handleLogoUpload(event)" class="hidden">
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-gray-800 text-xs text-gray-300">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="chk-enable-watermark" onchange="updatePreview()" class="rounded bg-gray-800 border-gray-700 text-brand-gold focus:ring-0">
+            <span>Bật Watermark chìm ở giữa tem (Mờ 6%)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 1. GOOGLE SHEET LINK INPUT & SYNCHRONIZATION -->
+      <div class="bg-brand-charcoal border border-brand-gold/50 rounded-xl p-4 shadow-lg space-y-3 relative" id="gsheet-zone">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-table text-green-500 text-xl"></i>
+            <span class="text-xs font-bold text-gray-200 uppercase tracking-wider">Nạp Dữ Liệu Từ Google Sheet</span>
+          </div>
+          <span class="text-[10px] bg-green-950 text-green-400 px-2 py-0.5 rounded border border-green-700 font-semibold flex items-center gap-1">
+            <i class="fa-solid fa-cloud"></i> Live Cloud Sync
+          </span>
+        </div>
+
+        <p class="text-xs text-gray-400">
+          Dán link <strong>Google Sheet</strong> (Đảm bảo đã bấm nút <b>"Chia sẻ"</b> $\rightarrow$ Chọn <i>"Bất kỳ ai có đường link đều có thể xem"</i>):
+        </p>
+
+        <div class="space-y-2">
+          <div class="relative">
+            <input type="text" id="gsheet-url-input" 
+                   placeholder="https://docs.google.com/spreadsheets/d/1..." 
+                   class="w-full bg-gray-900 border border-gray-700 focus:border-brand-gold rounded-lg pl-3 pr-10 py-2.5 text-xs text-white placeholder-gray-500 outline-none transition">
+            <button type="button" onclick="pasteFromClipboard()" title="Dán từ bộ nhớ tạm" class="absolute right-2 top-2.5 text-gray-400 hover:text-brand-gold px-1.5 py-0.5 text-xs">
+              <i class="fa-solid fa-paste"></i>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div class="space-y-1">
+              <label class="text-[10px] text-gray-400">Tên Trang Sheet chính (để trống = lấy Sheet đầu):</label>
+              <input type="text" id="gsheet-tab-main" value="" placeholder="vd: Sheet1 hoặc Trang tính1" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white outline-none">
+            </div>
+            <div class="space-y-1">
+              <label class="text-[10px] text-gray-400">Trang Sheet thành phần (nếu tách riêng):</label>
+              <input type="text" id="gsheet-tab-comp" value="" placeholder="vd: Sheet2 hoặc ThànhPhần" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white outline-none">
+            </div>
+          </div>
+
+          <div class="flex gap-2 pt-1">
+            <button type="button" onclick="loadFromGoogleSheet()" id="btn-sync-gsheet" class="flex-1 gold-gradient-bg text-black font-extrabold py-2.5 rounded-lg shadow-lg hover:brightness-110 active:scale-95 transition flex items-center justify-center gap-2 text-xs">
+              <i class="fa-solid fa-cloud-arrow-down text-sm"></i>
+              <span>TẢI DỮ LIỆU TỪ GOOGLE SHEET</span>
+            </button>
+
+            <button type="button" onclick="document.getElementById('excel-file-input').click()" title="Tải file Excel offline dự phòng" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold px-3 py-2 rounded-lg border border-gray-700 text-xs transition flex items-center gap-1.5">
+              <i class="fa-solid fa-file-excel text-green-500"></i>
+              <span class="hidden sm:inline">Excel Offline</span>
+            </button>
+            <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" onchange="handleFileSelect(event)" class="hidden">
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. DATABASE SEARCH / QUICK SELECT -->
+      <div class="bg-brand-charcoal border border-brand-gold/40 rounded-xl p-4 shadow-lg space-y-3">
+        <div class="flex items-center justify-between border-b border-gray-700 pb-2">
+          <h2 class="text-sm font-bold text-brand-gold uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-magnifying-glass"></i> Tra Cứu CSDL Hóa Chất & MSDS
+          </h2>
+          <span class="text-xs text-gray-400" id="db-count-badge">CSDL có sẵn</span>
+        </div>
+
+        <div class="relative">
+          <input type="text" id="product-search-input" onkeyup="filterProducts()" placeholder="Gõ mã (WB04, 1010R, 125S, 850R, Standox...)" 
+            class="w-full bg-gray-900 border border-gray-700 focus:border-brand-gold rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 outline-none transition">
+          <i class="fa-solid fa-search absolute right-3 top-3 text-gray-500"></i>
+          
+          <div id="search-results-dropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-brand-gold rounded-lg shadow-2xl z-20 max-h-60 overflow-y-auto divide-y divide-gray-800">
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-1.5 pt-1">
+          <span class="text-xs text-gray-400 self-center mr-1">Mẫu nhanh:</span>
+          <button onclick="selectProduct('WB04')" class="text-xs bg-brand-gold text-black font-bold rounded px-2 py-1 transition shadow">WB04 (Gốc nước)</button>
+          <button onclick="selectProduct('1010R')" class="text-xs bg-gray-800 hover:bg-brand-darkgold/40 text-brand-gold border border-brand-gold/30 rounded px-2 py-1 transition">1010R</button>
+          <button onclick="selectProduct('125S')" class="text-xs bg-gray-800 hover:bg-brand-darkgold/40 text-brand-gold border border-brand-gold/30 rounded px-2 py-1 transition">125S</button>
+          <button onclick="selectProduct('850R')" class="text-xs bg-gray-800 hover:bg-brand-darkgold/40 text-brand-gold border border-brand-gold/30 rounded px-2 py-1 transition">850R</button>
+          <button onclick="selectProduct('HS 15-25')" class="text-xs bg-gray-800 hover:bg-brand-darkgold/40 text-brand-gold border border-brand-gold/30 rounded px-2 py-1 transition">HS 15-25</button>
+        </div>
+      </div>
+
+      <!-- 3. INPUT FORM -->
+      <form id="label-form" onsubmit="event.preventDefault()" class="bg-brand-charcoal border border-gray-800 rounded-xl p-4 shadow-lg space-y-4">
+        
+        <div class="flex items-center justify-between border-b border-gray-700 pb-2">
+          <h2 class="text-sm font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-pen-to-square text-brand-gold"></i> Nhập Thông Tin Tem Phụ
+          </h2>
+          <span class="text-xs text-green-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-shield-check"></i> Đầy Đủ 8 Mục Chuẩn Hóa</span>
+        </div>
+
+        <div class="space-y-2 border-b border-gray-800 pb-3">
+          <div class="text-xs font-bold text-brand-gold uppercase tracking-wider">Mã Nhận Dạng Hóa Chất & Tên Hàng</div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div class="md:col-span-2 space-y-1">
+              <label class="text-[11px] text-gray-300">Tên thương mại hàng hóa <span class="text-red-400">*</span></label>
+              <input type="text" id="inp-product-name" oninput="updatePreview()" class="w-full bg-gray-900 border border-gray-700 focus:border-brand-gold rounded px-2.5 py-1.5 text-xs text-white outline-none">
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] text-gray-300">Mã GMC / Ref Code <span class="text-red-400">*</span></label>
+              <input type="text" id="inp-gmc-code" oninput="updatePreview()" placeholder="vd: 1250043583" class="w-full bg-gray-900 border border-gray-700 focus:border-brand-gold rounded px-2.5 py-1.5 text-xs text-white outline-none">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <div class="space-y-1">
+              <label class="text-[11px] text-gray-400">Số Lô / Lot Number</label>
+              <input type="text" id="inp-batch-no" oninput="updatePreview()" placeholder="vd: B2026-NGLM" class="w-full bg-gray-900 border border-gray-700 focus:border-brand-gold rounded px-2.5 py-1 text-xs text-white outline-none">
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] text-gray-400">Nhà SX & Xuất xứ</label>
+              <input type="text" id="inp-origin" oninput="updatePreview()" class="w-full bg-gray-900 border border-gray-700 focus:border-brand-gold rounded px-2.5 py-1 text-xs text-white outline-none">
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-1 border-b border-gray-800 pb-3">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-brand-gold uppercase tracking-wider">Định Lượng (Quy cách đóng gói) <span class="text-red-400">*</span></label>
+            <span class="text-[10px] text-gray-400">Từ file Excel/Sheet</span>
+          </div>
+          <input type="text" id="inp-volume" oninput="updatePreview()" placeholder="vd: 0.5L / lon, 1.5L / lon, 1 LT, 5 LT, 20 Kg" 
+                 class="w-full bg-gray-900 border border-brand-gold/60 focus:border-brand-gold font-bold rounded px-3 py-1.5 text-xs text-brand-gold outline-none">
+        </div>
+
+        <div class="bg-gray-900/90 p-3 rounded-lg border border-gray-800 space-y-2">
+          <div class="text-xs font-bold text-brand-gold uppercase tracking-wider flex items-center justify-between">
+            <span>Ngày Sản Xuất (NSX) & Hạn Sử Dụng (HSD)</span>
+            <span class="text-[10px] text-green-400 font-normal">Tự động tính HSD</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div class="space-y-1">
+              <label class="text-[11px] text-gray-300">Ngày SX thực tế (NSX)</label>
+              <input type="date" id="inp-mfg-date" onchange="calculateExpiry(); updatePreview();" class="w-full bg-gray-800 border border-gray-700 focus:border-brand-gold rounded px-2 py-1 text-xs text-white outline-none">
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] text-gray-300">Thời hạn bảo quản</label>
+              <div class="flex gap-1">
+                <input type="number" id="inp-shelf-val" value="36" min="1" oninput="calculateExpiry(); updatePreview();" class="w-16 bg-gray-800 border border-gray-700 text-center rounded px-1 py-1 text-xs text-white outline-none">
+                <select id="inp-shelf-unit" onchange="calculateExpiry(); updatePreview();" class="bg-gray-800 border border-gray-700 text-xs text-white rounded px-1 py-1 outline-none">
+                  <option value="months">Tháng</option>
+                  <option value="years">Năm</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-gray-800/80">
+            <div class="space-y-1">
+              <label class="text-[10px] text-gray-400">Chuỗi hiển thị HSD trên tem</label>
+              <input type="text" id="inp-shelf-display-text" oninput="updatePreview()" placeholder="vd: 36 tháng kể từ NSX" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-brand-gold outline-none">
+            </div>
+            <div class="space-y-1 flex flex-col justify-end">
+              <div class="text-[10px] text-gray-400">HSD tự động tính:</div>
+              <div class="text-xs font-bold text-green-400 bg-gray-950 px-2 py-1 rounded border border-gray-800" id="lbl-calc-exp-date">--/--/----</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-1 border-b border-gray-800 pb-3">
+          <label class="text-xs font-bold text-brand-gold uppercase tracking-wider">Thành Phần Hóa Chất (% & CAS)</label>
+          <textarea id="inp-ingredients" oninput="updatePreview()" rows="3" placeholder="Nhập hoặc tải tự động từ Google Sheet..." class="w-full bg-gray-900 border border-gray-700 focus:border-brand-gold rounded px-3 py-1.5 text-xs text-white outline-none leading-relaxed"></textarea>
+        </div>
+
+        <div class="bg-gray-900/90 p-3 rounded-lg border border-gray-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-brand-gold uppercase tracking-wider">Cảnh Báo An Toàn GHS (Chuẩn UN / Upload MSDS)</span>
+            <label class="flex items-center gap-1.5 text-xs text-yellow-300 cursor-pointer bg-yellow-950/60 border border-yellow-700 px-2 py-0.5 rounded">
+              <input type="checkbox" id="chk-non-hazardous" onchange="toggleHazardousMode()" class="rounded bg-gray-800 border-gray-700 text-brand-gold focus:ring-0">
+              <span class="font-bold">KHÔNG NGUY HIỂM / Gốc nước (WB)</span>
+            </label>
+          </div>
+          
+          <div id="ghs-hazard-controls-group" class="space-y-3">
+            <div class="bg-gray-800/80 p-2.5 rounded border border-gray-700 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-brand-gold flex items-center gap-1">
+                  <i class="fa-solid fa-file-image"></i> Tải ảnh Hình đồ thực tế cắt từ MSDS:
+                </span>
+                <button type="button" onclick="clearCustomGhsImage()" class="text-[10px] text-red-400 hover:underline">Xóa ảnh upload</button>
+              </div>
+              <input type="file" id="inp-custom-ghs-img" accept="image/*" onchange="handleCustomGhsUpload(event)" class="w-full text-xs text-gray-300 bg-gray-900 border border-gray-700 rounded p-1">
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-[11px] text-gray-300 font-semibold">Chọn hình đồ GHS (Viền kim cương đỏ chuẩn UN):</label>
+              <div class="grid grid-cols-5 gap-1.5 text-center text-[10px]">
+                <label class="bg-gray-800 p-1.5 rounded border border-gray-700 cursor-pointer hover:border-brand-gold flex flex-col items-center">
+                  <input type="checkbox" id="chk-ghs-02" onchange="updatePreview()" class="mb-1 text-brand-gold">
+                  <span>GHS02<br>Dễ cháy</span>
+                </label>
+                <label class="bg-gray-800 p-1.5 rounded border border-gray-700 cursor-pointer hover:border-brand-gold flex flex-col items-center">
+                  <input type="checkbox" id="chk-ghs-07" onchange="updatePreview()" class="mb-1 text-brand-gold">
+                  <span>GHS07<br>Kích ứng</span>
+                </label>
+                <label class="bg-gray-800 p-1.5 rounded border border-gray-700 cursor-pointer hover:border-brand-gold flex flex-col items-center">
+                  <input type="checkbox" id="chk-ghs-08" onchange="updatePreview()" class="mb-1 text-brand-gold">
+                  <span>GHS08<br>Sức khỏe</span>
+                </label>
+                <label class="bg-gray-800 p-1.5 rounded border border-gray-700 cursor-pointer hover:border-brand-gold flex flex-col items-center">
+                  <input type="checkbox" id="chk-ghs-05" onchange="updatePreview()" class="mb-1 text-brand-gold">
+                  <span>GHS05<br>Ăn mòn</span>
+                </label>
+                <label class="bg-gray-800 p-1.5 rounded border border-gray-700 cursor-pointer hover:border-brand-gold flex flex-col items-center">
+                  <input type="checkbox" id="chk-ghs-09" onchange="updatePreview()" class="mb-1 text-brand-gold">
+                  <span>GHS09<br>Môi trường</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div class="space-y-1">
+                <label class="text-[11px] text-gray-300">Từ cảnh báo</label>
+                <input type="text" id="inp-signal-word" oninput="updatePreview()" value="NGUY HIỂM (DANGER)" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white outline-none">
+              </div>
+              <div class="space-y-1">
+                <label class="text-[11px] text-gray-300">Mã Cảnh Báo Nguy Cơ (Mã H)</label>
+                <input type="text" id="inp-h-code" oninput="updatePreview()" placeholder="vd: H226, H312+H332, H317" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white outline-none">
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-[11px] text-gray-300">Nội dung Cảnh báo nguy cơ (H-statements)</label>
+              <textarea id="inp-ghs-text" oninput="updatePreview()" rows="2" class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white outline-none leading-relaxed"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-1 border-b border-gray-800 pb-3">
+          <label class="text-xs font-bold text-brand-gold uppercase tracking-wider">Biện Pháp Phòng Ngừa (P-Statements)</label>
+          <textarea id="inp-precaution-text" oninput="updatePreview()" rows="2" placeholder="Biện pháp phòng ngừa (P-Statements từ MSDS)..." class="w-full bg-gray-900 border border-gray-700 focus:border-brand-gold rounded px-3 py-1.5 text-xs text-white outline-none leading-relaxed"></textarea>
+        </div>
+
+        <div class="space-y-2 border-b border-gray-800 pb-3">
+          <div class="text-xs font-bold text-brand-gold uppercase tracking-wider">Hướng Dẫn Sử Dụng & Bảo Quản</div>
+          <div class="space-y-1">
+            <label class="text-[11px] text-gray-300">Hướng dẫn sử dụng (HDSD) - Quy trình pha & ứng dụng <span class="text-red-400">*</span></label>
+            <textarea id="inp-usage" oninput="updatePreview()" rows="2" placeholder="vd: Dùng pha trộn cùng sơn bóng ô tô theo tỷ lệ 2:1..." class="w-full bg-gray-900 border border-gray-700 focus:border-brand-gold rounded px-3 py-1.5 text-xs text-white outline-none leading-relaxed"></textarea>
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] text-gray-300">Hướng dẫn bảo quản <span class="text-red-400">*</span></label>
+            <input type="text" id="inp-storage" oninput="updatePreview()" class="w-full bg-gray-900 border border-gray-700 focus:border-brand-gold rounded px-3 py-1.5 text-xs text-white outline-none">
+          </div>
+        </div>
+
+        <div class="pt-2 flex gap-2">
+          <button type="button" onclick="saveToLocalDb()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-brand-gold border border-brand-gold/40 font-semibold py-2 rounded text-xs transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-bookmark"></i>
+            <span>Lưu Thông Tin Vào CSDL Tạm</span>
+          </button>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- RIGHT COLUMN: LIVE STICKER PREVIEW & PRINT SETUP (7 cols) -->
+    <section class="lg:col-span-7 space-y-4 flex flex-col">
+      
+      <div class="bg-brand-charcoal border border-gray-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-bold text-brand-gold uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-sliders"></i> Cấu hình Bố cục in A4:
+          </span>
+          <select id="select-decal-size" onchange="changeDecalSize()" class="bg-gray-900 border border-brand-gold text-white text-xs font-semibold rounded px-3 py-1.5 outline-none">
+            <option value="a4-4up">Dàn 4 Tem / Trang A4 (Lưới 2x2 - Lon 1L-5L)</option>
+            <option value="a4-6up">Dàn 6 Tem / Trang A4 (Lưới 2x3 - Lon 0.5L)</option>
+            <option value="100x70">Tem Đơn Cuộn Decal (100mm x 70mm)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button onclick="window.print()" class="gold-gradient-bg text-black font-extrabold px-5 py-2 rounded-lg shadow-md hover:brightness-110 active:scale-95 transition flex items-center gap-2 text-xs">
+            <i class="fa-solid fa-print text-sm"></i>
+            <span>IN TEM NGAY</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 bg-gray-900 border border-gray-800 rounded-xl p-4 md:p-6 flex items-start justify-center overflow-auto min-h-[560px] relative">
+        <div class="absolute top-3 left-3 text-[11px] text-gray-500 font-mono uppercase tracking-widest flex items-center gap-1 z-10 bg-gray-900/80 px-2 py-1 rounded border border-gray-800">
+          <i class="fa-solid fa-eye text-brand-gold"></i> Bản Xem Trước Thời Gian Thực (Live Preview)
+        </div>
+
+        <div id="preview-wrapper" class="transition-all duration-300 mt-6">
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="print-wrapper" class="hidden">
+  </div>
+
+  <script>
+    const defaultLogoFallback = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMDAgMjQwIiB3aWR0aD0iMzAwIiBoZWlnaHQ9IjI0MCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnb2xkR3JhZCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2JmOTUzZiIvPjxzdG9wIG9mZnNldD0iMjUlIiBzdG9wLWNvbG9yPSIjZmNmNmJhIi8+PHN0b3Agb2Zmc2V0PSI1MCUiIHN0b3AtY29sb3I9IiNiMzg3MjgiLz48c3RvcCBvZmZzZXQ9Ijc1JSIgc3RvcC1jb2xvcj0iI2ZiZjViNyIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2FhNzcxYyIvPjwvbGluZWFyR3JhZGllbnQ+PGxpbmVhckdyYWRpZW50IGlkPSJnb2xkRGFyayIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzE4MTYxNCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzI0MjExZCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxwYXRoIGQ9Ik0xNTAgMTIgTDI3MCA0OCBWMTI1IEMyNzAgMTgyIDE1MCAyMjUgMTUwIDIyNSBDMTUwIDIyNSAzMCAxODIgMzAgMTI1IFY0OCBMMTUwIDEyIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNnb2xkR3JhZCkiIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Ik0xNTAgMjggTDI1MCA1OCBWMTIwIEMyNTAgMTY4IDE1MCAyMDUgMTUwIDIwNSBDMTUwIDIwNSA1MCAxNjggNTAgMTIwIFY1OCBMMTUwIDI4IFoiIGZpbGw9IiMxODE2MTQiIHN0cm9rZT0idXJsKCNnb2xkR3JhZCkiIHN0cm9rZS13aWR0aD0iNCIvPjxwYXRoIGQ9Ik04NSA5NSBDODUgNzUgMTE1IDYyIDE1MCA2MiBDMTg1IDYyIDIxNSA3NSAyMTUgOTUiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNnb2xkR3JhZCkiIHN0cm9rZS13aWR0aD0iNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHJlY3QgeD0iNTVsIHk9IjEwMiIgd2lkdGg9IjE5MCIgaGVpZ2h0PSIzNiIgcng9IjYiIGZpbGw9InVybCgjZ29sZEdyYWQpIi8+PHRleHQgeD0iMTUwIiB5PSIxMjciIGZvbnQtZmFtaWx5PSInSW50ZXInLCAnU2Vnb2UgVUknLCBBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCIgZm9udC1zaXplPSIyMCIgZmlsbD0iIzE4MTYxNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgbGV0dGVyLXNwYWNpbmc9IjEiPkNBVCBOR1VZRU48L3RleHQ+PHRleHQgeD0iMTUwIiB5PSIxNTYiIGZvbnQtZmFtaWx5PSInSW50ZXInLCAnU2Vnb2UgVUknLCBBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjgwMCIgZm9udC1zaXplPSIxMyIgZmlsbD0idXJsKCNnb2xkR3JhZCkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGxldHRlci1zcGFjaW5nPSIyIj5BVVRPQ09MT1I8L3RleHQ+PHRleHQgeD0iMTUwIiB5PSIxNzgiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9InVybCgjZ29sZEdyYWQpIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXdlaWdodD0iOTAwIj7imIUg4pmFIOKZhSDimIUg4pmFPC90ZXh0Pjwvc3ZnPg==`;
+
+    let logoDataUri = defaultLogoFallback;
+    let customGhsImageDataUri = null;
+
+    function handleLogoUpload(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          logoDataUri = evt.target.result;
+          updatePreview();
+          showNotification("Đã cập nhật Logo Cát Nguyên mới thành công!");
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function handleCustomGhsUpload(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          customGhsImageDataUri = evt.target.result;
+          updatePreview();
+          showNotification("Đã nạp ảnh hình đồ GHS từ MSDS!");
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function clearCustomGhsImage() {
+      customGhsImageDataUri = null;
+      document.getElementById('inp-custom-ghs-img').value = '';
+      updatePreview();
+      showNotification("Đã xóa ảnh GHS tải lên, chuyển về GHS UN Vector.");
+    }
+
+    let CHEMICAL_DATABASE = [
+      {
+        id: "WB04",
+        gmc: "1250043583",
+        name: "WB04 Cromax® Pro Mixing Color Intense Black",
+        volume: "0.5L / lon",
+        origin: "Axalta Coating Systems Germany GmbH | Đức",
+        shelfVal: 48,
+        shelfUnit: "months",
+        ingredients: "Nhựa Acrylic copolymer gốc nước, Nước cất, Solvesso/Glycol ether (<5%), Carbon Black (Chất tạo màu), Phụ gia phân tán",
+        isNonHazardous: true,
+        ghs: { ghs02: false, ghs07: false, ghs08: false, ghs05: false, ghs09: false },
+        signalWord: "KHÔNG NGUY HIỂM",
+        hCode: "",
+        ghsText: "Sản phẩm sơn gốc nước (Waterborne Basecoat). Không thuộc danh mục hóa chất nguy hiểm theo GHS / Nghị định 111.",
+        precautionText: "Tránh tiếp xúc trực tiếp lâu dài với da và mắt. Rửa sạch với nước nếu dính vào mắt. Đeo găng tay khi thao tác pha màu.",
+        usage: "Dùng làm màu gốc nhựa pha màu sơn xe ô tô gốc nước. Pha màu theo công thức tiêu chuẩn, khuấy đều 3-5 phút trước khi pha trộn, phun trong phòng sơn tiêu chuẩn.",
+        storage: "Bảo quản nơi khô ráo, thoáng mát (5-30°C). Tránh đóng băng và đậy kín nắp ngay sau khi sử dụng."
+      },
+      {
+        id: "1010R",
+        gmc: "1250003138",
+        name: "1010R High Solids Activator Fast",
+        volume: "1 LT",
+        origin: "Axalta Coating Systems Germany GmbH | Đức",
+        shelfVal: 36,
+        shelfUnit: "months",
+        ingredients: "Chất đóng cứng Polyisocyanate aliphatic (40-60%), n-Butyl acetate (20-30%), Xylene (10-20%), Solvesso 100",
+        isNonHazardous: false,
+        ghs: { ghs02: true, ghs07: true, ghs08: true, ghs05: false, ghs09: false },
+        signalWord: "NGUY HIỂM (DANGER)",
+        hCode: "H226, H317, H332, H335, H336",
+        ghsText: "H226: Chất lỏng và hơi dễ cháy. H317: Có thể gây dị ứng da. H332: Có hại nếu hít phải. H335: Kích ứng hô hấp.",
+        precautionText: "P210: Tránh xa nguồn nhiệt/tia lửa. P261: Tránh hít hơi hóa chất. P280: Mang găng tay và kính bảo hộ.",
+        usage: "Chất đóng rắn nhanh dùng pha trộn với sơn bóng hoặc sơn lót ô tô theo tỷ lệ 2:1 (Dung tích Sơn : Đóng rắn). Khuấy đều 2-3 phút, dùng súng phun áp lực 2.0-2.5 bar.",
+        storage: "Bảo quản nơi khô ráo, thoáng mát (5-30°C). Đậy kín nắp ngay sau khi sử dụng để tránh đóng cứng do hơi ẩm."
+      },
+      {
+        id: "125S",
+        gmc: "1250004510",
+        name: "125S Standard Activator",
+        volume: "0.5 LT",
+        origin: "Axalta Coating Systems Germany GmbH | Đức",
+        shelfVal: 36,
+        shelfUnit: "months",
+        ingredients: "Hợp chất Polyisocyanate resin, Ethyl acetate, n-Butyl acetate, Toluene (<0.1%)",
+        isNonHazardous: false,
+        ghs: { ghs02: true, ghs07: true, ghs08: false, ghs05: false, ghs09: false },
+        signalWord: "NGUY HIỂM (DANGER)",
+        hCode: "H225, H319, H336",
+        ghsText: "H225: Chất lỏng dễ cháy. H319: Gây kích ứng mắt nghiêm trọng.",
+        precautionText: "P210: Giữ cách xa nguồn nhiệt. P305+P351: Rửa kỹ với nước nếu dính vào mắt.",
+        usage: "Chất đóng rắn tiêu chuẩn cho sơn bóng ô tô. Pha trộn tỷ lệ 2:1 (Sơn bóng : Đóng rắn), dùng trong nhiệt độ 20-30°C, thời gian khô bề mặt 20 phút.",
+        storage: "Lưu kho nơi thông thoáng, tránh ánh nắng trực tiếp, đậy chặt nắp sau khi chiết rót."
+      },
+      {
+        id: "850R",
+        gmc: "1250008433",
+        name: "850R Epoxy Activator",
+        volume: "1 LT",
+        origin: "Axalta Coating Systems Germany GmbH | Đức",
+        shelfVal: 2,
+        shelfUnit: "years",
+        ingredients: "Polyamine adduct, Isobutanol, Xylene, 2,4,6-tris(dimethylaminomethyl)phenol",
+        isNonHazardous: false,
+        ghs: { ghs02: true, ghs07: true, ghs08: true, ghs05: true, ghs09: false },
+        signalWord: "NGUY HIỂM (DANGER)",
+        hCode: "H226, H315, H318, H335",
+        ghsText: "H318: Gây tổn thương mắt nghiêm trọng. H226: Chất lỏng dễ cháy.",
+        precautionText: "P280: Đeo kính bảo hộ và găng tay chống hóa chất. P305+P351+P338: Rửa ngay với nước nếu dính mắt.",
+        usage: "Dùng làm chất đóng rắn cho sơn lót Epoxy 840R bảo vệ gầm và bề mặt kim loại ô tô. Pha tỷ lệ 4:1, để yên 15 phút phản ứng trước khi phun.",
+        storage: "Để nơi khô ráo, tránh xa nguồn nước, hơi ẩm và chất oxy hóa."
+      },
+      {
+        id: "HS 15-25",
+        gmc: "4024669678120",
+        name: "STANDOX HARDENER HS 15-25",
+        volume: "1 LT",
+        origin: "Standox GmbH | Đức",
+        shelfVal: 36,
+        shelfUnit: "months",
+        ingredients: "n-Butyl axetat (CAS: 123-86-4) [10 - 30%], Etyl benzen (CAS: 100-41-4) [1 - 3%]",
+        isNonHazardous: false,
+        ghs: { ghs02: true, ghs07: true, ghs08: true, ghs05: false, ghs09: false },
+        signalWord: "NGUY HIỂM (DANGER)",
+        hCode: "H226, H312+H332, H317",
+        ghsText: "H226: Chất lỏng dễ cháy. H312+H332: Có hại khi tiếp xúc da hoặc hít phải.",
+        precautionText: "P280: Mang trang phục bảo hộ thích hợp. P210: Tránh xa tia lửa.",
+        usage: "Chất đóng rắn sơn bóng Standox HS tiêu chuẩn. Pha trộn tỷ lệ 2:1 với Sơn bóng Standox HS + 5-10% Dung môi, khuấy đều 2-3 phút trước khi phun sơn xe ô tô.",
+        storage: "Đậy nắp kín, tránh không khí ẩm xâm nhập làm đục chất đóng rắn."
+      }
+    ];
+
+    const GHS_SVGS = {
+      ghs02: `<svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 100 100"><polygon points="50,3 97,50 50,97 3,50" fill="#ffffff" stroke="#ff0000" stroke-width="6"/><path d="M48,22 C48,22 42,34 46,42 C50,50 58,45 58,54 C58,63 50,70 41,70 C32,70 30,62 34,55 C30,60 30,67 36,72 C42,77 53,78 60,71 C67,64 66,52 61,45 C56,38 58,30 48,22 Z M46,55 C46,55 42,60 44,64 C46,68 52,68 53,64 C54,60 50,57 46,55 Z" fill="#000000"/><rect x="30" y="76" width="40" height="4" fill="#000000"/></svg>`,
+      ghs07: `<svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 100 100"><polygon points="50,3 97,50 50,97 3,50" fill="#ffffff" stroke="#ff0000" stroke-width="6"/><path d="M44,22 L56,22 L53,58 L47,58 Z M50,66 C54.5,66 58,69.5 58,74 C58,78.5 54.5,82 50,82 C45.5,82 42,78.5 42,74 C42,69.5 45.5,66 50,66 Z" fill="#000000"/></svg>`,
+      ghs08: `<svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 100 100"><polygon points="50,3 97,50 50,97 3,50" fill="#ffffff" stroke="#ff0000" stroke-width="6"/><path d="M50,22 C43,22 38,27 38,34 C38,41 43,45 46,49 C39,51 32,56 32,66 L32,78 L68,78 L68,66 C68,56 61,51 54,49 C57,45 62,41 62,34 C62,27 57,22 50,22 Z M50,48 L53,55 L60,55 L55,60 L57,67 L50,63 L43,67 L45,60 L40,55 L47,55 Z" fill="#000000"/></svg>`,
+      ghs05: `<svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 100 100"><polygon points="50,3 97,50 50,97 3,50" fill="#ffffff" stroke="#ff0000" stroke-width="6"/><path d="M22,35 L40,35 L37,45 L25,45 Z M60,35 L78,35 L75,45 L63,45 Z M20,68 L80,68 L80,78 L20,78 Z M45,45 L55,45 L55,60 L45,60 Z" fill="#000000"/></svg>`,
+      ghs09: `<svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 100 100"><polygon points="50,3 97,50 50,97 3,50" fill="#ffffff" stroke="#ff0000" stroke-width="6"/><path d="M25,65 Q35,55 45,65 T65,65 T80,65 L80,72 L20,72 Z M60,30 L65,42 L75,45 L67,52 L69,62 L60,57 L51,62 L53,52 L45,45 L55,42 Z" fill="#000000"/></svg>`
+    };
+
+    function calculateExpiry() {
+      const mfgVal = document.getElementById('inp-mfg-date').value;
+      const shelfVal = parseInt(document.getElementById('inp-shelf-val').value) || 36;
+      const shelfUnit = document.getElementById('inp-shelf-unit').value;
+
+      if (!mfgVal) {
+        document.getElementById('lbl-calc-exp-date').innerText = '--/--/----';
+        return;
+      }
+
+      const d = new Date(mfgVal);
+      if (isNaN(d.getTime())) return;
+
+      if (shelfUnit === 'months') {
+        d.setMonth(d.getMonth() + shelfVal);
+      } else {
+        d.setFullYear(d.getFullYear() + shelfVal);
+      }
+
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+
+      const formattedExp = `${day}/${month}/${year}`;
+      document.getElementById('lbl-calc-exp-date').innerText = formattedExp;
+      
+      const unitText = shelfUnit === 'months' ? 'tháng' : 'năm';
+      document.getElementById('inp-shelf-display-text').value = `${shelfVal} ${unitText} kể từ NSX`;
+    }
+
+    function getGhsSvgHtml() {
+      if (customGhsImageDataUri) {
+        return `<img src="${customGhsImageDataUri}" alt="GHS MSDS Image" class="h-9 w-auto object-contain border border-red-500 p-0.5">`;
+      }
+      const isNonHaz = document.getElementById('chk-non-hazardous').checked;
+      if (isNonHaz) return '';
+
+      let html = '';
+      if (document.getElementById('chk-ghs-02').checked) html += GHS_SVGS.ghs02;
+      if (document.getElementById('chk-ghs-07').checked) html += GHS_SVGS.ghs07;
+      if (document.getElementById('chk-ghs-08').checked) html += GHS_SVGS.ghs08;
+      if (document.getElementById('chk-ghs-05').checked) html += GHS_SVGS.ghs05;
+      if (document.getElementById('chk-ghs-09').checked) html += GHS_SVGS.ghs09;
+      return html;
+    }
+
+    function toggleHazardousMode() {
+      const isNonHaz = document.getElementById('chk-non-hazardous').checked;
+      const grp = document.getElementById('ghs-hazard-controls-group');
+      if (isNonHaz) {
+        grp.classList.add('opacity-40', 'pointer-events-none');
+      } else {
+        grp.classList.remove('opacity-40', 'pointer-events-none');
+      }
+      updatePreview();
+    }
+
+    function changeDecalSize() {
+      updatePreview();
+    }
+
+    function filterProducts() {
+      const query = document.getElementById('product-search-input').value.toLowerCase().trim();
+      const dropdown = document.getElementById('search-results-dropdown');
+      
+      if (!query) {
+        dropdown.classList.add('hidden');
+        return;
+      }
+
+      const matches = CHEMICAL_DATABASE.filter(p => 
+        (p.id && p.id.toLowerCase().includes(query)) ||
+        (p.gmc && p.gmc.toLowerCase().includes(query)) ||
+        (p.name && p.name.toLowerCase().includes(query))
+      );
+
+      if (matches.length === 0) {
+        dropdown.innerHTML = `<div class="p-3 text-xs text-gray-400">Không tìm thấy mã phù hợp. Bạn có thể tự điền thông tin bên dưới.</div>`;
+      } else {
+        dropdown.innerHTML = matches.map(p => `
+          <div onclick="selectProduct('${p.id}')" class="p-2.5 hover:bg-brand-gold/20 cursor-pointer transition text-xs flex justify-between items-center">
+            <div>
+              <span class="font-bold text-brand-gold">[${p.id}]</span> 
+              <span class="text-white">${p.name}</span>
+            </div>
+            <span class="text-[10px] text-gray-400 font-mono">${p.volume || ''}</span>
+          </div>
+        `).join('');
+      }
+      dropdown.classList.remove('hidden');
+    }
+
+    function selectProduct(id) {
+      const item = CHEMICAL_DATABASE.find(p => p.id === id || p.gmc === id);
+      if (!item) return;
+
+      document.getElementById('inp-product-name').value = item.name || '';
+      document.getElementById('inp-gmc-code').value = item.gmc || '';
+      document.getElementById('inp-origin').value = item.origin || 'Axalta Coating Systems Germany GmbH | Đức';
+      document.getElementById('inp-volume').value = item.volume || '1 LT';
+
+      document.getElementById('inp-shelf-val').value = item.shelfVal || 36;
+      document.getElementById('inp-shelf-unit').value = item.shelfUnit || 'months';
+
+      document.getElementById('inp-ingredients').value = item.ingredients || '';
+
+      document.getElementById('chk-non-hazardous').checked = !!item.isNonHazardous;
+      
+      if (item.ghs) {
+        document.getElementById('chk-ghs-02').checked = !!item.ghs.ghs02;
+        document.getElementById('chk-ghs-07').checked = !!item.ghs.ghs07;
+        document.getElementById('chk-ghs-08').checked = !!item.ghs.ghs08;
+        document.getElementById('chk-ghs-05').checked = !!item.ghs.ghs05;
+        document.getElementById('chk-ghs-09').checked = !!item.ghs.ghs09;
+      }
+
+      document.getElementById('inp-signal-word').value = item.signalWord || 'NGUY HIỂM (DANGER)';
+      document.getElementById('inp-h-code').value = item.hCode || '';
+      document.getElementById('inp-ghs-text').value = item.ghsText || '';
+      document.getElementById('inp-precaution-text').value = item.precautionText || '';
+      document.getElementById('inp-usage').value = item.usage || '';
+      document.getElementById('inp-storage').value = item.storage || '';
+
+      document.getElementById('search-results-dropdown').classList.add('hidden');
+      document.getElementById('product-search-input').value = item.name;
+
+      toggleHazardousMode();
+      calculateExpiry();
+      updatePreview();
+      showNotification(`Đã chọn sản phẩm: ${item.name}`);
+    }
+
+    async function pasteFromClipboard() {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          document.getElementById('gsheet-url-input').value = text;
+          showNotification("Đã dán đường link Google Sheet!");
+        }
+      } catch (err) {
+        showNotification("Hãy dán trực tiếp bằng phím Ctrl+V!");
+      }
+    }
+
+    function extractSpreadsheetId(url) {
+      const matches = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      return matches ? matches[1] : null;
+    }
+
+    async function fetchGoogleSheetCsv(spreadsheetId, sheetName) {
+      const urls = [
+        `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv${sheetName ? '&sheet=' + encodeURIComponent(sheetName) : ''}`,
+        `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv${sheetName ? '&sheet=' + encodeURIComponent(sheetName) : ''}`
+      ];
+
+      let lastErr = null;
+      for (const url of urls) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            const text = await res.text();
+            if (text.includes('<!DOCTYPE html>') || text.includes('<html')) {
+              throw new Error('FILE_RESTRICTED');
+            }
+            return text;
+          }
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+
+      if (lastErr && lastErr.message === 'FILE_RESTRICTED') {
+        throw new Error('FILE_RESTRICTED');
+      }
+      throw new Error('Failed to fetch');
+    }
+
+    async function loadFromGoogleSheet() {
+      const urlInput = document.getElementById('gsheet-url-input').value.trim();
+      if (!urlInput) {
+        alert("Vui lòng dán đường link Google Sheet vào ô nhập liệu!");
+        return;
+      }
+
+      const spreadsheetId = extractSpreadsheetId(urlInput);
+      if (!spreadsheetId) {
+        alert("Đường link Google Sheet không hợp lệ! Vui lòng kiểm tra lại đường dẫn.");
+        return;
+      }
+
+      const btn = document.getElementById('btn-sync-gsheet');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-sm"></i> <span>ĐANG ĐỒNG BỘ DỮ LIỆU...</span>`;
+
+      try {
+        const mainTab = document.getElementById('gsheet-tab-main').value.trim();
+        const mainCsv = await fetchGoogleSheetCsv(spreadsheetId, mainTab);
+        
+        const mainWb = XLSX.read(mainCsv, { type: 'string' });
+        const sheet = mainWb.Sheets[mainWb.SheetNames[0]];
+        const rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        let currentProduct = null;
+        let count = 0;
+
+        rawRows.forEach(row => {
+          if (!row || row.length === 0) return;
+          const colB = String(row[1] || "").trim();
+          const colC = String(row[2] || "").trim();
+          const colD = String(row[3] || "").trim();
+          const colE = String(row[4] || "").trim();
+
+          if (colB && colB !== "Tên thương mại" && !colB.startsWith("STT") && !colB.includes("Thông tin")) {
+            if (currentProduct) {
+              CHEMICAL_DATABASE.unshift(currentProduct);
+              count++;
+            }
+            currentProduct = {
+              id: colB,
+              gmc: "",
+              name: colB,
+              volume: "1 LT",
+              origin: "Axalta Coating Systems Germany GmbH | Đức",
+              shelfVal: 36,
+              shelfUnit: "months",
+              ingredientsList: [],
+              ingredients: "",
+              isNonHazardous: colB.startsWith('WB'),
+              ghs: { ghs02: true, ghs07: true, ghs08: true, ghs05: false, ghs09: false },
+              signalWord: "NGUY HIỂM (DANGER)",
+              hCode: "H226, H312+H332, H317",
+              ghsText: "H226: Chất lỏng dễ cháy. H312+H332: Có hại khi tiếp xúc da hoặc hít phải.",
+              precautionText: "P280: Mang trang phục bảo hộ thích hợp. P210: Tránh xa tia lửa.",
+              usage: "Dùng pha trộn cùng sơn ô tô theo tỷ lệ tiêu chuẩn, khuấy đều 2-3 phút trước khi phun.",
+              storage: "Bảo quản nơi khô ráo, thoáng mát (5-30°C), đậy nắp kín sau khi dùng."
+            };
+          }
+
+          if (currentProduct && colC && colC !== "Tên hóa chất" && !colC.includes("thành phần")) {
+            let itemStr = colC;
+            if (colD && colD !== "Mã CAS" && colD !== "CAS") itemStr += ` (CAS: ${colD})`;
+            if (colE && colE !== "Hàm lượng (%)" && colE !== "Hàm lượng") itemStr += ` [${colE}%]`;
+            currentProduct.ingredientsList.push(itemStr);
+          }
+        });
+
+        if (currentProduct) {
+          CHEMICAL_DATABASE.unshift(currentProduct);
+          count++;
+        }
+
+        CHEMICAL_DATABASE.forEach(item => {
+          if (item.ingredientsList && item.ingredientsList.length > 0) {
+            item.ingredients = item.ingredientsList.join(', ');
+          }
+        });
+
+        document.getElementById('db-count-badge').innerText = `CSDL: ${CHEMICAL_DATABASE.length} mã hàng`;
+        showNotification(`Đã đồng bộ ${count} mã hóa chất từ Google Sheet thành công!`);
+        if (CHEMICAL_DATABASE.length > 0) selectProduct(CHEMICAL_DATABASE[0].id);
+
+      } catch (err) {
+        if (err.message === 'FILE_RESTRICTED') {
+          alert("🔒 LỖI CHIA SẺ GOOGLE SHEET:\n\nGoogle Sheet của bạn đang ở chế độ HẠN CHẾ (RIÊNG TƯ).\n\nHÃY LÀM THEO 3 BƯỚC SAU:\n1. Bấm nút '🔒 Chia sẻ' màu xanh ở góc trên bên phải Google Sheet.\n2. Chuyển mục 'Quyền truy cập chung' từ 'Hạn chế' -> 'Bất kỳ ai có đường link đều có thể xem'.\n3. Bấm 'Xong' và thử tải lại!");
+        } else {
+          alert("Lỗi tải Google Sheet: " + err.message + "\n\nVui lòng kiểm tra lại đường link hoặc tên trang tính.");
+        }
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) processExcelFile(file);
+    }
+
+    function processExcelFile(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          parseExcelWorkbook(workbook);
+        } catch (err) {
+          alert("Lỗi đọc file Excel: " + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function parseExcelWorkbook(wb) {
+      const firstSheet = wb.Sheets[wb.SheetNames[0]];
+      const rawRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      let currentProduct = null;
+      let count = 0;
+
+      rawRows.forEach(row => {
+        if (!row || row.length === 0) return;
+        const colB = String(row[1] || "").trim();
+        const colC = String(row[2] || "").trim();
+        const colD = String(row[3] || "").trim();
+        const colE = String(row[4] || "").trim();
+
+        if (colB && colB !== "Tên thương mại" && !colB.startsWith("STT") && !colB.includes("Thông tin")) {
+          if (currentProduct) {
+            CHEMICAL_DATABASE.unshift(currentProduct);
+            count++;
+          }
+          currentProduct = {
+            id: colB,
+            gmc: "",
+            name: colB,
+            volume: "1 LT",
+            origin: "Axalta Coating Systems Germany GmbH | Đức",
+            shelfVal: 36,
+            shelfUnit: "months",
+            ingredientsList: [],
+            ingredients: "",
+            isNonHazardous: colB.startsWith('WB'),
+            ghs: { ghs02: true, ghs07: true, ghs08: true, ghs05: false, ghs09: false },
+            signalWord: "NGUY HIỂM (DANGER)",
+            hCode: "H226, H312+H332, H317",
+            ghsText: "H226: Chất lỏng dễ cháy. H312+H332: Có hại khi tiếp xúc da hoặc hít phải.",
+            precautionText: "P280: Mang trang phục bảo hộ thích hợp. P210: Tránh xa tia lửa.",
+            usage: "Dùng pha trộn cùng sơn ô tô theo tỷ lệ tiêu chuẩn, khuấy đều 2-3 phút trước khi phun.",
+            storage: "Bảo quản nơi khô ráo, thoáng mát (5-30°C), đậy nắp kín sau khi dùng."
+          };
+        }
+
+        if (currentProduct && colC && colC !== "Tên hóa chất" && !colC.includes("thành phần")) {
+          let itemStr = colC;
+          if (colD && colD !== "Mã CAS" && colD !== "CAS") itemStr += ` (CAS: ${colD})`;
+          if (colE && colE !== "Hàm lượng (%)" && colE !== "Hàm lượng") itemStr += ` [${colE}%]`;
+          currentProduct.ingredientsList.push(itemStr);
+        }
+      });
+
+      if (currentProduct) {
+        CHEMICAL_DATABASE.unshift(currentProduct);
+        count++;
+      }
+
+      CHEMICAL_DATABASE.forEach(item => {
+        if (item.ingredientsList && item.ingredientsList.length > 0) {
+          item.ingredients = item.ingredientsList.join(', ');
+        }
+      });
+
+      document.getElementById('db-count-badge').innerText = `CSDL: ${CHEMICAL_DATABASE.length} mã hàng`;
+      showNotification(`Đã nạp ${count} sản phẩm từ file Excel!`);
+      if (CHEMICAL_DATABASE.length > 0) selectProduct(CHEMICAL_DATABASE[0].id);
+    }
+
+    function updatePreview() {
+      const name = document.getElementById('inp-product-name').value || 'STANDOX HARDENER HS 15-25';
+      const gmc = document.getElementById('inp-gmc-code').value || '4024669678120';
+      const batchNo = document.getElementById('inp-batch-no').value || 'B2026-NGLM';
+      const origin = document.getElementById('inp-origin').value || 'Standox GmbH | Đức';
+      const volume = document.getElementById('inp-volume').value || '1 LT';
+
+      const mfgVal = document.getElementById('inp-mfg-date').value;
+      let mfgFormatted = '10/11/2026';
+      if (mfgVal) {
+        const parts = mfgVal.split('-');
+        if (parts.length === 3) mfgFormatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      const shelfDisplayText = document.getElementById('inp-shelf-display-text').value || '36 tháng kể từ NSX';
+      const calcExp = document.getElementById('lbl-calc-exp-date').innerText;
+
+      const ingredients = document.getElementById('inp-ingredients').value || 'n-Butyl axetat (CAS: 123-86-4) [10 - 30%], Etyl benzen (CAS: 100-41-4) [1 - 3%]';
+
+      const isNonHaz = document.getElementById('chk-non-hazardous').checked;
+      const signalWord = isNonHaz ? "KHÔNG NGUY HIỂM" : (document.getElementById('inp-signal-word').value || "NGUY HIỂM (DANGER)");
+      const hCode = isNonHaz ? "" : (document.getElementById('inp-h-code').value || "H226, H312+H332, H317");
+      const ghsText = isNonHaz ? "Hóa chất gốc nước không thuộc danh mục nguy hiểm theo GHS." : (document.getElementById('inp-ghs-text').value || "H226: Chất lỏng dễ cháy. H312+H332: Có hại khi tiếp xúc da hoặc hít phải.");
+      const ghsSvgs = getGhsSvgHtml();
+
+      const precautionText = document.getElementById('inp-precaution-text').value || 'P280: Mang trang phục bảo hộ thích hợp. P210: Tránh xa tia lửa.';
+      const usage = document.getElementById('inp-usage').value || 'Chất đóng rắn sơn bóng Standox HS tiêu chuẩn. Pha trộn tỷ lệ 2:1 với Sơn bóng Standox HS + 5-10% Dung môi, khuấy đều 2-3 phút trước khi phun sơn xe ô tô.';
+      const storage = document.getElementById('inp-storage').value || 'Lưu giữ ở nơi khô ráo, thoáng mát (5-30°C), đậy nắp kín tránh hơi ẩm.';
+
+      const enableWatermark = document.getElementById('chk-enable-watermark')?.checked;
+
+      const buildDecalCardHtml = () => `
+        <div class="print-decal-card bg-white text-black border-2 border-black font-sans leading-tight shadow-md relative overflow-hidden text-left p-3 flex flex-col justify-between h-full">
+          ${enableWatermark ? `
+            <div class="absolute inset-0 flex items-center justify-center opacity-[0.06] pointer-events-none z-0">
+              <img src="${logoDataUri}" alt="Watermark Logo" class="w-[60%] h-[60%] object-contain">
+            </div>
+          ` : ''}
+
+          <div class="relative z-10 flex flex-col justify-between h-full space-y-1">
+            <div class="border-b-2 border-black pb-1 flex items-center justify-between gap-2">
+              <div>
+                <h1 class="font-black uppercase text-[10pt] tracking-wider leading-none text-black">
+                  TEM PHỤ HÓA CHẤT
+                </h1>
+              </div>
+              <div class="w-14 h-7 flex-shrink-0 flex items-center justify-center border border-black bg-white p-0.5 rounded">
+                <img src="${logoDataUri}" alt="Cát Nguyên Logo" class="w-full h-full object-contain filter contrast-125" onerror="this.src=defaultLogoFallback">
+              </div>
+            </div>
+
+            <div class="text-center py-1 border-b border-black">
+              <div class="font-black text-[10.5pt] uppercase text-black leading-tight tracking-wide">${name}</div>
+            </div>
+
+            <div class="text-[6.8pt] leading-tight border-b border-black pb-1 space-y-0.5">
+              <div class="flex items-start">
+                <span class="font-bold w-28 flex-shrink-0">Mã nhận dạng:</span>
+                <span class="font-bold text-black">${gmc} ${batchNo ? `| Lô (Lot): ${batchNo}` : ''}</span>
+              </div>
+              <div class="flex items-start">
+                <span class="font-bold w-28 flex-shrink-0">Nhà SX & Xuất xứ:</span>
+                <span class="font-medium text-black">${origin}</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[6.8pt] border-b border-black pb-1">
+              <div><span class="font-bold">Định lượng:</span> <span class="font-black text-[7.5pt]">${volume}</span></div>
+              <div><span class="font-bold">Ngày sản xuất:</span> ${mfgFormatted}</div>
+              <div class="col-span-2"><span class="font-bold">Hạn sử dụng:</span> ${shelfDisplayText} ${calcExp !== '--/--/----' ? `(${calcExp})` : ''}</div>
+            </div>
+
+            <div class="text-[6.8pt] leading-tight border-b border-black pb-1">
+              <span class="font-bold text-[7pt]">Thành phần:</span> ${ingredients}
+            </div>
+
+            <div class="text-[6.6pt] leading-tight border-b border-black pb-1 space-y-0.5">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-[7pt]">Cảnh báo an toàn (GHS):</span>
+                ${isNonHaz 
+                  ? `<span class="font-black text-[6.5pt] text-green-900 bg-green-100 px-1 rounded border border-green-600">KHÔNG NGUY HIỂM</span>`
+                  : `<span class="font-black text-[7pt] text-red-700 bg-red-100 px-1 rounded border border-red-500">${signalWord}</span>`
+                }
+              </div>
+              
+              <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1">${ghsSvgs}</div>
+                <div class="text-[6.5pt] font-black text-black">${hCode ? `[Mã H: ${hCode}]` : ''}</div>
+              </div>
+
+              <div class="text-[6.5pt] font-semibold text-black">${ghsText}</div>
+            </div>
+
+            <div class="text-[6.6pt] leading-tight border-b border-black pb-1">
+              <span class="font-bold text-[7pt]">Biện pháp phòng ngừa:</span> ${precautionText}
+            </div>
+
+            <div class="text-[6.8pt] leading-snug border-b border-black pb-1 space-y-0.5">
+              <div>
+                <span class="font-bold text-black">Hướng dẫn sử dụng:</span> 
+                <span class="font-medium text-black">${usage}</span>
+              </div>
+              <div>
+                <span class="font-bold text-black">Hướng dẫn bảo quản:</span> 
+                <span class="font-medium text-black">${storage}</span>
+              </div>
+            </div>
+
+            <!-- Tên công ty & địa chỉ cố định trên 1 dòng -->
+            <div class="text-[6.2pt] leading-tight pt-0.5 space-y-0.5 border-t border-black/20">
+              <div class="flex items-center gap-1">
+                <span class="font-bold flex-shrink-0">Nhập khẩu & PP:</span>
+                <span class="font-black text-black whitespace-nowrap text-[6.2pt] tracking-tight">CÔNG TY TNHH SƠN Ô TÔ CÁT NGUYÊN</span>
+              </div>
+              <div class="text-[5.8pt] text-gray-900 leading-tight">
+                Địa chỉ: Số 47/3 Trường Chinh, Phường Bảy Hiền, Thành phố Hồ Chí Minh, Việt Nam | MST: 0319353151
+              </div>
+            </div>
+
+          </div>
+        </div>
+      `;
+
+      const layoutSize = document.getElementById('select-decal-size').value;
+      const previewWrapper = document.getElementById('preview-wrapper');
+      const printWrapper = document.getElementById('print-wrapper');
+
+      if (layoutSize === 'a4-4up') {
+        const cardHtml = buildDecalCardHtml();
+        previewWrapper.className = 'a4-page-preview';
+        previewWrapper.innerHTML = `
+          <div class="grid-a4-4up">
+            ${cardHtml}${cardHtml}${cardHtml}${cardHtml}
+          </div>
+        `;
+        printWrapper.innerHTML = `
+          <div class="print-page-a4">
+            <div class="grid-a4-4up">
+              ${cardHtml}${cardHtml}${cardHtml}${cardHtml}
+            </div>
+          </div>
+        `;
+      } else if (layoutSize === 'a4-6up') {
+        const cardHtml = buildDecalCardHtml();
+        previewWrapper.className = 'a4-page-preview';
+        previewWrapper.innerHTML = `
+          <div class="grid-a4-6up">
+            ${cardHtml}${cardHtml}${cardHtml}${cardHtml}${cardHtml}${cardHtml}
+          </div>
+        `;
+        printWrapper.innerHTML = `
+          <div class="print-page-a4">
+            <div class="grid-a4-6up">
+              ${cardHtml}${cardHtml}${cardHtml}${cardHtml}${cardHtml}${cardHtml}
+            </div>
+          </div>
+        `;
+      } else {
+        const cardHtml = buildDecalCardHtml();
+        previewWrapper.className = 'decal-100x70 rounded shadow-2xl';
+        previewWrapper.innerHTML = cardHtml;
+        printWrapper.innerHTML = `
+          <div class="print-decal-single">
+            ${cardHtml}
+          </div>
+        `;
+      }
+    }
+
+    function saveToLocalDb() {
+      const name = document.getElementById('inp-product-name').value;
+      if (!name) {
+        alert("Vui lòng nhập tên thương mại hàng hóa!");
+        return;
+      }
+      const gmc = document.getElementById('inp-gmc-code').value || 'CUSTOM-' + Date.now();
+      
+      const newEntry = {
+        id: gmc,
+        gmc: gmc,
+        name: name,
+        volume: document.getElementById('inp-volume').value,
+        origin: document.getElementById('inp-origin').value,
+        shelfVal: parseInt(document.getElementById('inp-shelf-val').value) || 36,
+        shelfUnit: document.getElementById('inp-shelf-unit').value,
+        ingredients: document.getElementById('inp-ingredients').value,
+        isNonHazardous: document.getElementById('chk-non-hazardous').checked,
+        ghs: {
+          ghs02: document.getElementById('chk-ghs-02').checked,
+          ghs07: document.getElementById('chk-ghs-07').checked,
+          ghs08: document.getElementById('chk-ghs-08').checked,
+          ghs05: document.getElementById('chk-ghs-05').checked,
+          ghs09: document.getElementById('chk-ghs-09').checked,
+        },
+        signalWord: document.getElementById('inp-signal-word').value,
+        hCode: document.getElementById('inp-h-code').value,
+        ghsText: document.getElementById('inp-ghs-text').value,
+        precautionText: document.getElementById('inp-precaution-text').value,
+        usage: document.getElementById('inp-usage').value,
+        storage: document.getElementById('inp-storage').value
+      };
+
+      const existingIndex = CHEMICAL_DATABASE.findIndex(p => p.id === gmc || p.name === name);
+      if (existingIndex >= 0) {
+        CHEMICAL_DATABASE[existingIndex] = newEntry;
+      } else {
+        CHEMICAL_DATABASE.unshift(newEntry);
+      }
+      showNotification(`Đã lưu "${name}" vào CSDL tạm!`);
+    }
+
+    function resetForm() {
+      if (CHEMICAL_DATABASE.length > 0) {
+        selectProduct(CHEMICAL_DATABASE[0].id);
+      }
+    }
+
+    function showNotification(msg) {
+      const toast = document.getElementById('toast-notify');
+      const msgElem = document.getElementById('toast-message');
+      if (toast && msgElem) {
+        msgElem.innerText = msg;
+        toast.classList.remove('translate-y-20', 'opacity-0');
+        setTimeout(() => {
+          toast.classList.add('translate-y-20', 'opacity-0');
+        }, 3500);
+      }
+    }
+
+    window.onload = function() {
+      const today = new Date();
+      const day = String(today.getDate()).padStart(2, '0');
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const year = today.getFullYear();
+      document.getElementById('inp-mfg-date').value = `${year}-${month}-${day}`;
+
+      document.getElementById('db-count-badge').innerText = `CSDL: ${CHEMICAL_DATABASE.length} mã mẫu`;
+      selectProduct("HS 15-25");
+    };
+  </script>
+</body>
+</html>
