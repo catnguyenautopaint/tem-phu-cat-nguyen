@@ -438,6 +438,11 @@
             </label>
           </div>
 
+          <label class="flex items-center gap-2 bg-gray-800/80 px-2.5 py-1.5 rounded border border-brand-gold/40 cursor-pointer">
+            <input type="checkbox" id="chk-separate-lot-mfg" checked onchange="updatePreview()" class="rounded bg-gray-900 border-gray-600 text-brand-gold">
+            <span class="text-[11px] text-gray-200"><b>Tách riêng Số lô và Ngày sản xuất (NSX)</b> thành 2 dòng trên tem. Bỏ tích để hiển thị chung.</span>
+          </label>
+
           <!-- Custom Lot & Date inputs (shown when unchecked) -->
           <div id="custom-lot-date-box" class="hidden grid grid-cols-2 gap-2 pt-1">
             <div class="space-y-1">
@@ -2218,6 +2223,7 @@
       }
 
       const lotText = lotOnPack ? 'Xem trên sản phẩm' : (rawBatch || 'Xem trên sản phẩm');
+      const separateLotMfg = !!document.getElementById('chk-separate-lot-mfg')?.checked;
       const lotAndMfgCombined = (lotOnPack && mfgOnPack)
         ? 'Xem trên sản phẩm'
         : `${lotText} / ${mfgFormatted}`;
@@ -2230,7 +2236,9 @@
       return {
         name: document.getElementById('inp-product-name')?.value.trim() || 'SẢN PHẨM HÓA CHẤT Ô TÔ',
         gmc: document.getElementById('inp-gmc-code')?.value.trim() || 'N/A',
-        lot: lotAndMfgCombined,
+        lot: lotText,
+        lotAndMfgCombined,
+        separateLotMfg,
         mfg: mfgFormatted,
         origin: document.getElementById('inp-origin')?.value.trim() || 'Singapore',
         volume: document.getElementById('inp-volume')?.value.trim() || '',
@@ -2407,8 +2415,11 @@
                 <div><span class="font-bold">Định lượng:</span> <span class="font-black">${state.volume}</span></div>
                 <div><span class="font-bold">Xuất xứ:</span> <span class="font-semibold">${state.origin}</span></div>
                 ${/^singapore$/i.test(state.origin.trim()) ? `<div class="col-span-2"><span class="font-bold">Nhà SX:</span> Axalta Coating Systems Singapore Holding Pte Ltd.</div>` : ``}
-                <div><span class="font-bold">Số lô / NSX:</span> ${state.lot}</div>
-                <div><span class="font-bold">HSD:</span> ${state.shelfText}</div>
+                ${state.separateLotMfg ? `
+                  <div><span class="font-bold">Số lô:</span> ${state.lot}</div>
+                  <div><span class="font-bold">NSX:</span> ${state.mfg}</div>
+                ` : `<div class="col-span-2"><span class="font-bold">Số lô / NSX:</span> ${state.lotAndMfgCombined || state.lot}</div>`}
+                <div class="col-span-2"><span class="font-bold">HSD:</span> ${state.shelfText}</div>
                 <div class="col-span-2"><span class="font-bold">Thành phần:</span> ${state.ingredients}</div>
               </div>
 
@@ -2461,9 +2472,12 @@
 
 
             <div class="${scaleText} leading-tight border-b border-black pb-1 space-y-0.5">
-              <div><span class="font-bold">Số lô:</span> ${state.lot}</div>
+              ${state.separateLotMfg ? `
+                <div><span class="font-bold">Số lô:</span> ${state.lot}</div>
+                <div><span class="font-bold">NSX:</span> ${state.mfg}</div>
+              ` : `<div><span class="font-bold">Số lô / NSX:</span> ${state.lotAndMfgCombined || state.lot}</div>`}
               <div><span class="font-bold">Nhà SX & Xuất xứ:</span> ${state.origin}</div>
-              <div><span class="font-bold">Định lượng:</span> <span class="font-black">${state.volume}</span> | <span class="font-bold">NSX:</span> ${state.mfg}</div>
+              <div><span class="font-bold">Định lượng:</span> <span class="font-black">${state.volume}</span></div>
               <div><span class="font-bold">HSD:</span> ${state.shelfText}</div>
             </div>
 
@@ -2624,6 +2638,7 @@
       clearCustomGhsImage();
       document.getElementById('chk-lot-on-pack').checked = true;
       document.getElementById('chk-mfg-on-pack').checked = true;
+      document.getElementById('chk-separate-lot-mfg').checked = true;
       toggleOnPackFields();
       if (CHEMICAL_DATABASE.length > 0) {
         selectProductByUid(CHEMICAL_DATABASE[0].uid);
